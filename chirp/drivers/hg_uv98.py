@@ -162,7 +162,6 @@ PF1_LIST = ["BACK LIGHT", "SCAN", "SQUELCH", "TORCH", "BAND A/B"]
 PF2_LIST = ["BEACON", "LIST", "TORCH", "BACK LIGHT"]
 TOP_LIST = ["ALERT", "REMOTE ALERT", "TORCH", "TXP", "CH MDF", "OFF_NET_KEY"]
 SC_QT_LIST = ["Decode", "Encode", "Decode+Encode"]
-CH_LIST = [str(v) for v in range(1, 129)]
 APRS_RX_LIST = ["OFF", "BAND A", "BAND B"]
 TX_PRIORITY_LIST = ["VOICE", "APRS"]
 AUTOLOCK_DLY_LIST = ["{} S".format(v) for v in range(5, 31)]
@@ -279,6 +278,34 @@ def offset_for(freq):
         if bounds[0] <= freq <= bounds[1]:
             return offset
     return 0
+
+
+class RadioSettingValueChannel(RadioSettingValueList):
+    """A setting that points to a defined channel."""
+    def __init__(self, radio, current_raw):
+        current = int(current_raw)
+        current_mem = radio.get_memory(current)
+        options = [
+            self._format_memory(mem)
+            for mem in [
+                radio.get_memory(n)
+                for n in range(*radio.get_features().memory_bounds)
+            ]
+        ]
+        RadioSettingValueList.__init__(
+            self,
+            options,
+            self._format_memory(current_mem),
+        )
+
+    @staticmethod
+    def _format_memory(m):
+        if m.empty:
+            return str(int(m.number))
+        return "{} {:.4f} {}".format(int(m.number), m.freq / float(1e6), m.name)
+
+    def __trunc__(self):
+        return int(self.get_value().partition(" ")[0])
 
 
 @directory.register
@@ -630,7 +657,7 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             RadioSetting(
                 "pri_ch",
                 "Priority Channel",
-                RadioSettingValueList(CH_LIST, CH_LIST[_settings.pri_ch - 1]),
+                RadioSettingValueChannel(self, _settings.pri_ch),
             )
         )
         scan.append(
@@ -728,14 +755,14 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             RadioSetting(
                 "ch_a_mem_ch",
                 "Memory Channel (A)",
-                RadioSettingValueList(CH_LIST, CH_LIST[_settings.ch_a_mem_ch - 1]),
+                RadioSettingValueChannel(self, _settings.ch_a_mem_ch),
             )
         )
         vfo.append(
             RadioSetting(
                 "ch_b_mem_ch",
                 "Memory Channel (B)",
-                RadioSettingValueList(CH_LIST, CH_LIST[_settings.ch_b_mem_ch - 1]),
+                RadioSettingValueChannel(self, _settings.ch_b_mem_ch),
             )
         )
         vfo.append(
@@ -864,9 +891,5 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             name = element.get_name()
             value = element.value
 
-            # perform an setting munging here
-            if name in ("pri_ch", "ch_a_mem_ch", "ch_b_mem_ch"):
-                # convert 0-indexed list into 1-indexed value
-                value.set_value(str(int(value.get_value()) + 1))
             if hasattr(_settings, name):
                 setattr(_settings, name, value)
