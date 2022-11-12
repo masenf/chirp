@@ -296,11 +296,12 @@ class RadioSettingValueChannel(RadioSettingValueList):
     def __init__(self, radio, current_raw):
         current = int(current_raw)
         current_mem = radio.get_memory(current)
+        lower, upper = radio.get_features().memory_bounds
         options = [
             self._format_memory(mem)
             for mem in [
                 radio.get_memory(n)
-                for n in range(*radio.get_features().memory_bounds)
+                for n in range(lower, upper + 1)
             ]
         ]
         RadioSettingValueList.__init__(
