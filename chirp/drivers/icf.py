@@ -132,9 +132,15 @@ class RadioStream:
             else:
                 self.data += _data
 
+<<<<<<< HEAD
             if limit and 0xFD in self.data:
                 break
             if not nolimit and len(self.data) > 128 and 0xFD in self.data:
+=======
+            if limit and '\xFD' in self.data:
+                break
+            if not nolimit and len(self.data) > 128 and "\xFD" in self.data:
+>>>>>>> ade8436ab0119431eb80cc18bb1409a8ef256a77
                 break  # Give us a chance to do some status
             if len(self.data) > 1024:
                 break  # Avoid an endless loop of chewing garbage
