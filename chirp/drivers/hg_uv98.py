@@ -296,11 +296,12 @@ class RadioSettingValueChannel(RadioSettingValueList):
     def __init__(self, radio, current_raw):
         current = int(current_raw)
         current_mem = radio.get_memory(current)
+        lower, upper = radio.get_features().memory_bounds
         options = [
             self._format_memory(mem)
             for mem in [
                 radio.get_memory(n)
-                for n in range(*radio.get_features().memory_bounds)
+                for n in range(lower, upper + 1)
             ]
         ]
         RadioSettingValueList.__init__(
@@ -380,6 +381,7 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             self.pipe.write(b"\x45")
             raise
         except Exception as e:
+            LOG.exception("Unexpected error during download")
             raise errors.RadioError("Failed to download from radio: %s" % e)
         self.process_mmap()
 
@@ -393,6 +395,7 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             self.pipe.write(b"\x45")
             raise
         except Exception as e:
+            LOG.exception("Unexpected error during upload")
             raise errors.RadioError("Failed to upload to radio: %s" % e)
 
     def get_raw_memory(self, number):
@@ -451,7 +454,7 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             mem.name, mem.extd_number = SPECIAL_CHANNELS[mem.number]
         else:
             _name = self._memobj.name[number - 1]
-            mem.name, _, _ = _name.name.get_raw().partition("\xFF")
+            mem.name, _, _ = _name.name.get_raw().partition("\xFF")[0].partition("\0")
         # XXX: other drivers rstrip the name and test_badname enforces this
         mem.name = mem.name.rstrip()
         mem.freq = int(_mem.rx_freq) * 10
