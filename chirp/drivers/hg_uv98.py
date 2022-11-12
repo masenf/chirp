@@ -380,6 +380,7 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             self.pipe.write(b"\x45")
             raise
         except Exception as e:
+            LOG.exception("Unexpected error during download")
             raise errors.RadioError("Failed to download from radio: %s" % e)
         self.process_mmap()
 
@@ -393,6 +394,7 @@ class LanchonlhHG_UV98(chirp_common.CloneModeRadio, chirp_common.ExperimentalRad
             self.pipe.write(b"\x45")
             raise
         except Exception as e:
+            LOG.exception("Unexpected error during upload")
             raise errors.RadioError("Failed to upload to radio: %s" % e)
 
     def get_raw_memory(self, number):
